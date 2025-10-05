@@ -142,10 +142,7 @@ extra_javascript:
 nav:
   - Home: index.md
   - This documentation: ./thisdocumentation/index.md
-  - Roteiros:
-    - Roteiro 1: ./roteiro1/index.md
-    - Roteiro 2: ./roteiro2/index.md
-    - Roteiro 3: ./roteiro3/index.md
-    - Roteiro 4: ./roteiro4/index.md
-    - Notebook 1: ./notebook1/ex1_data.ipynb
-  - Projeto: ./projeto/index.md
+  - Projetos:
+    - Projeto 1: ./projetos/classification/index.md
+  - Notebooks:
+    - Notebook 1: ./notebooks/processing.ipynb

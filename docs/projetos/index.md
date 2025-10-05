@@ -1,0 +1,1 @@
+Este compilado de documentações se refere a projetos executados em 2025.2
