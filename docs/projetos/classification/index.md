@@ -222,3 +222,166 @@ At this point we have to factor in the average loss mentioned earlier:
 avg_epoch_loss = total_loss / n_train
 train_losses.append(avg_epoch_loss)
 ```
+
+## 6. Training and Testing Strategy
+
+### 6.1. Data Splitting and Validation
+
+For this analysis, the complete dataset was divided into two distinct sets using an **80/20 ratio**:  
+**80%** for the training set (`X_train`) and **20%** for the test set (`X_test`).
+
+- **Training Set Size:** 103,904 passengers  
+- **Test/Validation Set Size:** 25,976 passengers  
+
+To ensure the reproducibility of the split, a fixed random state was utilized:
+
+```python
+rng = np.random.RandomState(42)
+```
+
+In the absence of a separate dedicated validation set, the `X_test` set serves a **dual purpose**:
+- Used as the **validation set** during training for monitoring performance and guiding the early stopping mechanism.
+- Used as the **final holdout set** for evaluating the best-performing model parameters.
+
+This ensures the model’s final evaluation is based on data it did not directly train on.
+
+---
+
+### 6.2. Training Mode
+
+The model was trained using **Online Training**, also known as **Stochastic Gradient Descent (SGD)** at the **sample level**.
+
+**Rationale:**  
+The network parameters are updated after processing **every single training sample** (`(x_i, y_i)`).  
+While computationally slower than batch training, this approach introduces high variance in gradient estimates, which can help the model **escape shallow local minima** early in training.  
+
+For this specific implementation, it maximizes the **frequency of learning updates** and clearly demonstrates the **core principles of backpropagation** on a single data point.
+
+---
+
+### 6.3. Overfitting Prevention (Early Stopping)
+
+To prevent the model from overfitting the training data—a common issue when training for many epochs—the **Early Stopping** technique was implemented.
+
+**Logic (based on validation loss on `X_test`):**
+
+- **Monitoring:**  
+  The **Binary Cross-Entropy Loss** is calculated on the `X_test` set at the end of every epoch.
+
+- **Best Model Tracking:**  
+  Model parameters (`W₁`, `W₂`, `b₁`, `b₂`) are saved **only if the validation loss improves** (decreases) by at least  
+  a specified minimum delta:  
+  `min_delta = 0.0001`.
+
+- **Patience:**  
+  A patience value of **5 epochs** was set.  
+  If the validation loss fails to meet the improvement threshold for **5 consecutive epochs**, the training halts early,  
+  and the best-saved parameters are restored for final evaluation.
+
+This strategy ensures that the **final reported metrics** are derived from the model that demonstrated the **best generalization performance** on unseen data, rather than the model obtained at the end of the full 20 epochs.
+
+## 7. Error Curves and Visualization
+
+### 7.1. Loss Curves and Convergence Analysis
+
+The training process was visualized by tracking the **Binary Cross-Entropy Loss** for both the training and validation (test) sets across epochs.
+
+The trend shown in the loss curve plot (**Figure 1: Loss vs. Epochs**) demonstrates excellent model performance:
+
+- **Rapid Decrease:** Both training and validation loss decrease rapidly within the first few epochs, confirming that the network is successfully learning the underlying patterns in the data.
+- **Convergence:** The loss values begin to stabilize, or plateau, indicating the model is approaching a minimum in the error landscape.
+- **Early Stopping:** The lowest validation loss (**Test Loss = 0.103729**) was achieved at **Epoch 19**. The training was halted shortly after this point due to the patience limit being reached, successfully preventing the model from continuing to learn noise in the training data, thereby avoiding overfitting and ensuring optimal generalization performance. The best model parameters were saved at this point.
+
+**Code used to generate the loss curves:**
+
+```python
+# 7. Error Curves and Visualization
+plt.figure(figsize=(10, 5))
+
+# Plot 1: Loss vs. Epochs
+plt.plot(train_losses[:len(train_losses)], label='Training Loss')
+plt.plot(test_losses[:len(test_losses)], label='Test (Validation) Loss')
+plt.axvline(x=best_epoch-1, color='r', linestyle='--', label=f'Best Model ({best_epoch})')
+plt.title("Loss vs. Epochs (SGD per-sample with Early Stopping)")
+plt.xlabel("Epoch")
+plt.ylabel("Binary Cross-Entropy Loss")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.savefig('loss_curves.png') 
+plt.close() 
+```
+
+---
+
+### 7.2. Accuracy Curve
+
+Although the primary early stopping decision was based on loss, tracking **test accuracy** further confirms the model's generalization ability, showing a steady increase and stabilization at a high level (**Test Acc ≈ 0.9575 at the best epoch**).
+
+---
+
+## 8. Evaluation Metrics
+
+The final model, utilizing the weights saved by the Early Stopping procedure (at **Epoch 19**), was evaluated on the held-out test set (**20,781 samples**).
+
+### 8.1. Performance Metrics Table
+
+The core classification metrics were calculated to provide a complete picture of the model's effectiveness.
+
+![Metrics Table](metrics_table.png)
+
+**Discussion on Strengths:**  
+The model demonstrates **high performance across all metrics**, with an overall **Accuracy of 95.71%**.  
+The **ROC-AUC of 0.9928** is extremely high, indicating excellent separability between the two classes (**Satisfied vs. Dissatisfied**) across various probability thresholds.  
+The **high Precision (96.24%)** suggests that when the model predicts a passenger is "Satisfied", it is correct the vast majority of the time, making its positive predictions highly reliable.
+
+**Code for calculating the final metrics:**
+
+```python
+# Final Forward Pass using best parameters
+A2_test = forward_pass(X_test, W1, b1, W2, b2)
+y_pred = (A2_test > 0.5).astype(int)
+
+# 8. Evaluation Metrics
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, A2_test)
+```
+
+---
+
+### 8.2. Confusion Matrix Analysis
+
+The confusion matrix provides a detailed breakdown of correct and incorrect predictions, offering insight into the types of errors the model makes.
+
+**Table 1: Confusion Matrix Results**
+
+![Confusion Matrix](confusion_matrix.png)
+
+**Interpretation:**  
+- **True Positives (8,324):** The model correctly identified 8,324 satisfied passengers.  
+- **False Negatives (566):** The model incorrectly classified 566 truly satisfied passengers as dissatisfied. This is the primary error type, representing satisfied customers who may be mistakenly flagged for unnecessary intervention or missed retention opportunities.  
+- **False Positives (325):** The model incorrectly classified 325 truly dissatisfied passengers as satisfied. This is the least frequent error type, reflecting the model's high Precision.
+
+The combination of **high Recall (93.63%)** and **very high Precision (96.24%)** demonstrates that the MLP model is highly reliable and accurate in predicting passenger satisfaction across the test set.
+
+**Code used to generate the confusion matrix heatmap:**
+
+```python
+# Confusion Matrix calculation
+cm = confusion_matrix(y_test, y_pred)
+
+# Plot 2: Confusion Matrix Heatmap
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
+            xticklabels=['Predicted 0 (Dissatisfied)', 'Predicted 1 (Satisfied)'],
+            yticklabels=['Actual 0 (Dissatisfied)', 'Actual 1 (Satisfied)'])
+plt.title("Confusion Matrix (Early Stop Model)")
+plt.ylabel("True Label")
+plt.xlabel("Predicted Label")
+plt.tight_layout()
+plt.savefig('confusion_matrix.png')
+plt.close()
+```

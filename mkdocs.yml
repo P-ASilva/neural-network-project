@@ -119,10 +119,6 @@ plugins:
   - markdown-exec
   - render_swagger:
       allow_arbitrary_locations : true
-  - termynal:
-      prompt_literal_start:
-        - "$"
-        - ">"
 
 # mkdocs-jupyter
   - mkdocs-jupyter:

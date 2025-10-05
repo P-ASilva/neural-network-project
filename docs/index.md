@@ -2,7 +2,7 @@
 
 1. Pedro Antônio Silva
 2. Eric Andrei Lima Possato
-3. 
+3. Gustavo Antony de Assis
 
 ## Projetos
 
