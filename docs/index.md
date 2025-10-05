@@ -1,7 +1,7 @@
 ## Grupo
 
 1. Pedro Antônio Silva
-2. 
+2. Eric Andrei Lima Possato
 3. 
 
 ## Projetos
