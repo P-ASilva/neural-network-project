@@ -39,6 +39,61 @@ Missing Values: A small number of missing values exist in the Arrival Delay colu
 
 Outliers: Numerical features like Delay and Flight Distance may have extreme values that need handling.
 
+## **3 Data Cleaning**
+
+
+### 3.1 Pre-Processing
+
+The dataset underwent comprehensive pre-processing to ensure data quality and prepare it for neural network modeling:
+
+- Missing Value Handling:
+
+    - Identified 310 missing values in the Arrival Delay in Minutes column
+
+- Implemented zero-imputation strategy, replacing missing values with 0, 
+    - under the assumption that missing arrival delay data likely indicates minimal or no delay
+
+- Categorical Variable Encoding:
+    - Identified 5 categorical variables: Gender, Customer Type, Type of Travel, Class, and satisfaction
+
+    - Applied one-hot encoding using `pd.get_dummies()` with drop_first=True parameter
+        This transformed categorical features into binary dummy variables while avoiding multicollinearity
+
+### 3.2 Feature Normalization with Tanh Activation
+
+The numerical features were normalized using standardization to improve neural network performance:
+
+Applied StandardScaler from scikit-learn to all numerical variables, according to Transformation formula:
+
+z=
+(
+x
+−
+μ
+)
+σ
+z= 
+σ
+(x−μ)
+​
+This centers data around mean (μ=0) with unit variance (σ=1)
+
+#### Benefits for neural networks:
+
+- Accelerates convergence during training
+
+- Prevents feature dominance due to different scales
+
+- Improves gradient descent efficiency
+
+- Tanh Normalization Compatibility
+
+    - The standardized features (range approximately [-3, +3]) are well-suited for tanh activation functions
+    - This normalization prevents saturation in tanh units during forward/backward propagation
+
+The final processed dataset contains 25 features with normalized numerical variables and encoded categorical variables, ready for neural network training and evaluation.
+
+
 
 ## 4. **MLP Implementation**
 
