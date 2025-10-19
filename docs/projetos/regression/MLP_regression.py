@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import seaborn as sns 
 import os
 
 # Tanh activation
@@ -41,7 +40,7 @@ except FileNotFoundError:
     data = {'feature1': np.random.rand(200), 'feature2': np.random.rand(200), 'selling_price': np.random.rand(200)*1e5}
     df = pd.DataFrame(data)
 
-# If you saved original target copy and/or log-transformed target, adapt here.
+
 TARGET = 'selling_price'
 if TARGET not in df.columns:
     raise ValueError(f"Target column '{TARGET}' not found in DataFrame.")
