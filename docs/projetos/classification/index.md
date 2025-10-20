@@ -375,6 +375,9 @@ Although the primary early stopping decision was based on loss, tracking **test 
 
 ---
 
+![Loss Curves](loss_curves.png)
+
+---
 ## 8. Evaluation Metrics
 
 The final model, utilizing the weights saved by the Early Stopping procedure (at **Epoch 19**), was evaluated on the held-out test set (**20,781 samples**).
