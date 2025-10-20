@@ -1,4 +1,4 @@
-# Housing Prices Data Preprocessing & EDA
+# Vehicle Price Data Preprocessing & EDA
 
 ## 1. Dataset Selection and Overview
 
@@ -6,158 +6,169 @@
 
 Source: Kaggle
 
-URL: [Housing Prices Dataset](https://www.kaggle.com/datasets/yasserh/housing-prices-dataset)
+URL: [Vehicle Dataset from CarDekho](https://www.kaggle.com/datasets/nehalbirla/vehicle-dataset-from-cardekho)
 
-Size: 545 samples x 13 features.
+Size: 8 Columns and 4340 Rows
 
 ### 1.2. Selection Reason
 
-This dataset presents a classic regression problem - predicting house prices - with appropriate complexity (12 input features) to demonstrate the effectiveness of an MLP model in regression problems.
+This dataset presents a practical regression problem - predicting vehicle selling prices - with rich features including both numerical and categorical data, making it ideal for demonstrating MLP regression capabilities in real-world scenarios.
 
 ### 1.3. Overview & Features
 
-The dataset contains information about house prices and their characteristics. The goal is regression: predict the price of a house based on its attributes.
+The dataset contains information about used cars and their selling prices. The goal is regression: predict the selling price of a vehicle based on its characteristics.
 
-Target Variable: price (Numerical)
+Target Variable: selling_price (Numerical)
 
 Input Features:
 
-- Physical Characteristics: area, number of bedrooms, bathrooms, stories, parking.
-- Binary Features: main road, guest room, basement, hot water heating, air conditioning, preferred area.
-- Property Status: furnishing status (furnished, semi-furnished, unfurnished).
+- Vehicle Specifications: year, km_driven
+- Technical Details: fuel type, seller_type, transmission
+- Brand Information: extracted from vehicle name to represent manufacturer
+- Sales Context: selling_price as target variable
 
 ### 1.4. Domain Context
 
-Accurate house price prediction is crucial for the real estate market, helping buyers, sellers, and investors in their decisions. This model can directly identify the key factors that influence property value.
+Accurate vehicle price prediction is essential in the automotive market, helping both dealers and customers make informed decisions. The model can identify key factors affecting a vehicle's resale value.
 
 ### 1.5. Potential Issues
 
-- Outliers: Numerical features like 'area' and 'price' may have extreme values that need treatment.
-- Scale: Numerical features have very different scales (area vs number of bedrooms).
-- Encoding: Categorical features need appropriate encoding for the model.
+- Outliers: Features like 'km_driven' and 'selling_price' contain extreme values requiring treatment
+- Brand Diversity: High cardinality in vehicle names/brands needs careful handling
+- Feature Scaling: Wide range of values across different features (year vs. km_driven)
 
 ## 2. Data Processing and Analysis
 
 ### 2.1. Data Loading and Feature Definition
 
-The dataset is loaded from KaggleHub, and features are categorized based on their data type for targeted preprocessing.
+The dataset is loaded from KaggleHub, and features are automatically categorized based on their data types.
 
 ```py
 import pandas as pd
 import numpy as np
-import os
-import kagglehub
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+import kagglehub
+import os
+
 # Load Data
-path = kagglehub.dataset_download("yasserh/housing-prices-dataset")
-df = pd.read_csv(os.path.join(path, "Housing.csv"), header=0)
-print(f"Dataset path: {path}")
+path = kagglehub.dataset_download("nehalbirla/vehicle-dataset-from-cardekho")
+df = pd.read_csv(os.path.join(path, "CAR DETAILS FROM CAR DEKHO.csv"), header=0)
 
 # Feature Definitions
-NUMERICAL_FEATURES = ['area', 'bedrooms', 'bathrooms', 'stories', 'parking']
-BINARY_FEATURES = ['mainroad', 'guestroom', 'basement', 'hotwaterheating', 'airconditioning', 'prefarea']
-NOMINAL_FEATURES = ['furnishingstatus']
-TARGET = 'price'
+TARGET = 'selling_price'
+CATEGORICAL_FEATURES = df.select_dtypes(include=['object']).columns.tolist()
+NUMERICAL_FEATURES = df.select_dtypes(include=['number']).columns.tolist()
 
-CATEGORICAL_FEATURES = BINARY_FEATURES + NOMINAL_FEATURES
+# Save original target values
+df[f'{TARGET}_original'] = df[TARGET]
+
+# Extract brand from name to reduce cardinality
+df['brand'] = df['name'].str.split().str[0]
+df.drop(columns=['name'], inplace=True)
+
+# Update categorical features after brand extraction
+CATEGORICAL_FEATURES = df.select_dtypes(include=['object']).columns.tolist()
 ```
 
 ### 2.2. Exploratory Data Analysis (EDA)
 
-Initial checks confirm the data structure, types, descriptive statistics, and integrity (missing values/unique categories).
+Initial analysis focuses on data structure, missing values, and distribution of features.
 
-#### 2.2.1. Data Structure and Non-Null Counts (df.info())
+#### 2.2.1. Data Structure and Missing Values
 
-The initial check confirms the total number of entries and the data types of all columns.
+Analysis of data completeness and feature distributions:
 
 ```py
-# DATA STRUCTURE AND NON-NULL COUNTS
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 545 entries, 0 to 544
-Data columns (total 13 columns):
- #   Column            Non-Null Count  Dtype 
----  ------            --------------  ----- 
- 0   price             545 non-null    int64 
- 1   area              545 non-null    int64 
- 2   bedrooms          545 non-null    int64 
- 3   bathrooms         545 non-null    int64 
- 4   stories           545 non-null    int64 
- 5   mainroad          545 non-null    object
- 6   guestroom         545 non-null    object
- 7   basement          545 non-null    object
- 8   hotwaterheating   545 non-null    object
- 9   airconditioning   545 non-null    object
- 10  parking           545 non-null    int64 
- 11  prefarea          545 non-null    object
- 12  furnishingstatus  545 non-null    object
-dtypes: int64(6), object(7)
-memory usage: 55.5+ KB
+# Inspect shapes and missing values
+print("Shape:", df.shape)
+print(df.isnull().sum())
+
+Shape: (4340, 9)
+year                      0
+selling_price             0
+km_driven                 0
+fuel                      0
+seller_type               0
+transmission              0
+owner                     0
+selling_price_original    0
+brand                     0
 ```
 
-#### 2.2.2. Descriptive Statistics (df.describe())
+#### 2.2.2. Target Variable Analysis
 
-Summary statistics for the defined numerical features show the distribution, center, and spread of the data.
+Examination of the selling price distribution:
 
 ```py
-# DESCRIPTIVE STATISTICS (Numerical Features)
-           count          mean           std      min       25%       50%       75%        max
-area       545.0  5150.541284  2170.141023  1590.0  3600.0  4600.0  6360.0  16200.0
-bedrooms   545.0     2.965138     0.738064     1.0     2.0     3.0     3.0      6.0
-bathrooms  545.0     1.286239     0.502883     1.0     1.0     1.0     2.0      4.0
-stories    545.0     1.805505     0.867492     1.0     1.0     2.0     2.0      4.0
-parking    545.0     0.693578     0.861586     0.0     0.0     0.0     1.0      3.0
+# Target variable statistics
+print(df['selling_price'].describe())
+
+count    4.340000e+03
+mean     5.041273e+05
+std      5.785487e+05
+min      2.000000e+04
+25%      2.087498e+05
+50%      3.500000e+05
+75%      6.000000e+05
+max      8.900000e+06
+Name: selling_price, dtype: float64
+
+# Histogram of selling prices
+df['selling_price'].hist(bins=50)
 ```
 
-#### 2.2.3. Missing Values Check
+[Prices Histogram](./prices_hist.png)
 
-The check confirms that the initial dataset contains no missing values, simplifying the cleaning process.
+#### 2.2.3. Brand Distribution Analysis
+
+Analysis of vehicle brands in the dataset:
 
 ```py
-# MISSING VALUES COUNT
-price               0
-area                0
-bedrooms            0
-bathrooms           0
-stories             0
-mainroad            0
-guestroom           0
-basement            0
-hotwaterheating     0
-airconditioning     0
-parking             0
-prefarea            0
-furnishingstatus    0
-dtype: int64
+# Top 20 brands by frequency
+print(df['brand'].value_counts().head(20))
+
+brand
+Maruti           1280
+Hyundai           821
+Mahindra          365
+Tata              361
+Honda             252
+Ford              238
+Toyota            206
+Chevrolet         188
+Renault           146
+Volkswagen        107
+Skoda              68
+Nissan             64
+Audi               60
+BMW                39
+Fiat               37
+Datsun             37
+Mercedes-Benz      35
+Mitsubishi          6
+Jaguar              6
+Land                5
+Name: count, dtype: int64
 ```
 
-#### 2.2.4. Categorical Feature Analysis (Value Counts)
+#### 2.2.4. Outlier Analysis
 
-The value counts for categorical features confirm the distribution and unique values, which is essential before encoding.
+Analysis of numerical features for outlier detection using IQR method:
 
 ```py
-# CATEGORICAL FEATURE VALUE COUNTS
+# Outlier detection for key numerical features
+for col in ['selling_price', 'km_driven']:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower = Q1 - 1.5 * IQR
+    upper = Q3 + 1.5 * IQR
+    print(f"{col} | lower: {lower:.2f}, upper: {upper:.2f}")
 
---- MAINROAD ---
-yes    468
-no      77
-Name: mainroad, dtype: int64
-
---- GUESTROOM ---
-no     448
-yes     97
-Name: guestroom, dtype: int64
-
---- BASEMENT ---
-no     354
-yes    191
-Name: basement, dtype: int64
-... (omitted for brevity)
-
---- FURNISHINGSTATUS ---
-semi-furnished    238
-unfurnished       178
-furnished         129
-Name: furnishingstatus, dtype: int64
+selling_price | lower: -400000.00, upper: 1200000.00
+km_driven | lower: -35507.50, upper: 165304.50
+Removed 291 outliers from the dataset.
 ```
 
 ## 3. Data Cleaning and Feature Engineering
@@ -166,50 +177,50 @@ The following steps are applied to prepare the data for consumption by a machine
 
 ### 3.1. Duplicates, Missing Values, and Outlier Treatment
 
-- Duplicate Removal: Any redundant rows are dropped.
-- Missing Value Imputation: If missing values were present (though not in this specific snapshot), numerical features would be imputed with the median, and categorical features with the mode.
-- Outlier Handling: Outliers in the price (Target) and area features are capped at the 99th percentile to mitigate their disproportionate influence on the model.
-
-### 3.2. Feature Encoding and Scaling
-
-The final steps involve converting text-based categorical features into numerical formats and scaling the numerical features.
+- Duplicate Removal: Redundant entries are removed to ensure data quality
+- Missing Value Treatment: Check and handle any missing values in both numerical and categorical features
+- Outlier Handling: IQR method used to detect and filter outliers in key numerical features (selling_price, km_driven)
 
 ```py
-# Duplicates, Missing Values, and Outlier Treatment
+# Remove Duplicates
 initial_rows = df.shape[0]
 df.drop_duplicates(inplace=True)
 
-# Handle Missing Values (Imputation logic for robustness)
+# Handle Missing Values
 if df.isnull().sum().any():
     for col in NUMERICAL_FEATURES:
         df[col].fillna(df[col].median(), inplace=True)
-    for col in BINARY_FEATURES + NOMINAL_FEATURES:
+    for col in CATEGORICAL_FEATURES:
         df[col].fillna(df[col].mode()[0], inplace=True)
 
-# Outlier Treatment (Capping at 99th percentile for 'price' and 'area')
-for col in [TARGET, 'area']:
-    upper_bound = df[col].quantile(0.99)
-    df[col] = np.where(df[col] > upper_bound, upper_bound, df[col])
-
-# Feature Encoding
-# Binary Encoding ('yes'/'no' -> 1/0)
-df[BINARY_FEATURES] = df[BINARY_FEATURES].replace({'yes': 1, 'no': 0})
-
-# One-Hot Encoding for Nominal Features (e.g., 'furnishingstatus')
-df_encoded = pd.get_dummies(df, columns=NOMINAL_FEATURES, drop_first=True, dtype=int)
-
-# Feature Scaling
-features_to_scale = [col for col in df_encoded.columns if col in NUMERICAL_FEATURES and col != TARGET]
-scaler = MinMaxScaler()
-
-# Min-Max Scaling on selected numerical features
-df_encoded[features_to_scale] = scaler.fit_transform(df_encoded[features_to_scale])
-
-print("\n--- Final Encoded DataFrame Head (Post-Processing) ---")
-print(df_encoded.head())
-print(f"\nFinal DataFrame Shape: {df_encoded.shape}")
+# Filter Outliers using IQR method
+for col in ['selling_price', 'km_driven']:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower = Q1 - 1.5 * IQR
+    upper = Q3 + 1.5 * IQR
+    df = df[(df[col] >= lower) & (df[col] <= upper)]
 ```
 
+### 3.2. Feature Encoding and Scaling
+
+The final steps involve encoding categorical variables and scaling numerical features to a consistent range:
+
+```py
+# One-Hot Encoding for Categorical Features
+df_encoded = pd.get_dummies(df, columns=CATEGORICAL_FEATURES, drop_first=True, dtype=int)
+
+# Identify features to scale (numerical features)
+features_to_scale = [col for col in df_encoded.columns if col in NUMERICAL_FEATURES]
+
+# Scale features to [-1, 1] range
+scaler = MinMaxScaler(feature_range=(-1, 1))
+df_encoded[features_to_scale] = scaler.fit_transform(df_encoded[features_to_scale])
+
+# Save processed dataset
+df_encoded.to_csv("../data/processed_vehicles.csv", index=False)
+```
 
 ## 4. **MLP Implementation**
 
