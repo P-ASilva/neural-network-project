@@ -442,3 +442,147 @@ At this point we have to factor in the average loss mentioned earlier:
 avg_train_loss = total_train_loss / n_train
 train_losses.append(avg_train_loss)
 ```
+
+## 6. **Training and Testing Strategy**
+
+### 6.1. Data Splitting Approach
+
+The model employs a two-tier splitting strategy for robust evaluation:
+
+```Python
+# Primary split: 85% train/validation, 15% test
+X_trainval, X_test, y_trainval, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
+
+# Secondary split: 5-fold cross-validation on training data
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+```
+
+### 6.2. Training Methodology
+
+**Mini-Batch Gradient Descent** was selected for optimal balance between computational efficiency and convergence stability:
+
+```Python
+batch_size = 16  # Balance between stochastic noise and batch stability
+```
+
+**Rationale**: Mini-batch training provides smoother convergence than pure stochastic gradient descent while remaining more memory-efficient than full-batch training, making it suitable for medium-sized datasets.
+
+### 6.3. Overfitting Prevention
+
+Multiple techniques combat overfitting:
+
+```Python
+# Early stopping with patience mechanism
+patience = 10
+min_delta = 1e-6
+best_loss = np.inf
+patience_counter = 0
+
+# Cross-validation for robust performance estimation
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+```
+
+**Early Stopping Logic**: Training halts if validation loss fails to improve by `min_delta` for `patience` consecutive epochs, preventing overfitting to training data.
+
+### 6.4. Reproducibility and Validation
+
+```Python
+rng = np.random.RandomState(42)  # Fixed random seed
+```
+
+**Validation Role**: The holdout validation set monitors generalization performance during training and triggers early stopping, while k-fold cross-validation provides reliable performance estimates across different data partitions.
+
+## 7. **Error Curves and Visualization**
+
+### 7.1. Convergence Monitoring
+
+Training and validation losses are tracked per epoch to analyze learning behavior:
+
+```Python
+train_losses = []
+val_losses = []
+
+# Record losses each epoch
+train_losses.append(avg_train_loss)
+val_losses.append(val_mse)
+```
+
+### 7.2. Loss Curve Analysis
+
+Multiple visualization approaches provide comprehensive insights:
+
+**Individual Fold Analysis**:
+![Fold Loss Curves](K-fold/fold_loss_curves.png)
+- Displays training and validation curves for all 5 folds
+- Reveals consistency (or variability) across different data splits
+- Identifies potential overfitting through train-val loss gaps
+
+**Aggregate Performance**:
+![Average Validation Loss](K-fold/average_val_loss.png)
+- Averages validation losses across all folds
+- Shows overall model learning trend
+- Highlights convergence point and training stability
+
+### 7.3. Interpretation Guidelines
+
+**Convergence Indicators**:
+- Plateauing loss curves indicate model has learned available patterns
+- Consistent decrease suggests ongoing learning potential
+- Oscillating curves may indicate learning rate issues
+
+**Overfitting Detection**:
+- Growing gap between training and validation losses
+- Validation loss increasing while training loss decreases
+- Early stopping typically mitigates this risk
+
+## 8. **Evaluation Metrics**
+
+### 8.1. Comprehensive Regression Assessment
+
+The model employs multiple metrics to evaluate different aspects of performance:
+
+```Python
+# Core regression metrics
+mse = mean_squared_error(y_test_original, y_pred_test_original)
+mae = mean_absolute_error(y_test_original, y_pred_test_original) 
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test_original, y_pred_test_original)
+```
+
+### 8.2. Baseline Comparison
+
+Performance is contextualized against a simple mean predictor baseline:
+
+```Python
+# Baseline model: predict mean of training data
+mean_baseline = np.mean(y_trainval_original)
+y_baseline = np.full_like(y_test_original, mean_baseline)
+
+# Calculate baseline metrics
+baseline_mse = mean_squared_error(y_test_original, y_baseline)
+baseline_r2 = r2_score(y_test_original, y_baseline)
+```
+
+### 8.3. Results Interpretation
+
+**Residual Analysis**:
+![Residual Plot](K-fold/residual_plot.png)
+- Points randomly scattered around diagonal indicate good fit
+- Patterns suggest systematic prediction errors
+- Outliers visible as points far from equality line
+
+**Metric-Specific Insights**:
+- **MSE/RMSE**: Penalizes large errors, sensitive to outliers
+- **MAE**: More robust to outliers, interpretable in target units  
+- **R²**: Proportion of variance explained, scale-independent
+
+**Comparative Analysis**:
+
+The model comparison results show the MLP significantly outperforms the baseline mean predictor:
+
+| Model | MSE | RMSE | MAE | R² |
+|-------|-----|------|-----|----|
+| **MLP** | 0.0102 | 0.1009 | 0.0687 | **0.9451** |
+| **Baseline (Mean)** | 0.2127 | 0.4612 | 0.3434 | -0.1475 |
+
+*Note: The MLP model achieves excellent performance with R² = 0.945, explaining 94.5% of the variance in vehicle prices, while the baseline model performs worse than simply predicting the mean (negative R²).*
