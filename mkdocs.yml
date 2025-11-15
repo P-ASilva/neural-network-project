@@ -141,5 +141,6 @@ nav:
   - Projetos:
     - Projeto 1: ./projetos/classification/index.md
     - Projeto 2: ./projetos/regression/index.md
+    - Projeto 3: ./projetos/generative/index.md
   - Notebooks:
     - Notebook 1: ./notebooks/processing.ipynb
