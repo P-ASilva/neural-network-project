@@ -13,6 +13,7 @@ The diffusion model (WAN video model) is the engine responsible for creating the
 The model begins from random latent noise and progressively refines it over several steps, shaping it into temporally consistent video frames. During refinement, it incorporates guidance from the prompt embeddings (positive and negative), enforcing visual style, subject appearance, lighting, scene layout, motion, and cinematic behavior.
 
 Key responsibilities:
+
 - Generates latent video frames from noise
 - Maintains temporal and spatial consistency across frames
 - Adapts to the prompt’s style, mood, and subject description
@@ -24,6 +25,7 @@ Key responsibilities:
 CLIP serves as a text encoder, converting prompts into vector representations (embeddings) that the diffusion model can understand. It does not generate images or video by itself. Instead, it communicates the meaning of the prompt.
 
 Two embeddings are used:
+
 - **Positive Prompt Embedding**: pushes the model toward desired attributes, objects, and styles
 - **Negative Prompt Embedding**: discourages unwanted artifacts such as blur, noise, distortions, or style deviations
 
@@ -36,6 +38,7 @@ CLIP determines what the video should or should not look like, and the diffusion
 The Variational Auto-Encoder (VAE) handles the conversion between latent space and pixel space. During video generation, the diffusion model outputs a sequence of latent frames rather than visible images. The VAE takes these latent frames and decodes them into real RGB visuals, acting as the final rendering stage of the pipeline.
 
 Responsibilities of the VAE decoder:
+
 - Converts latent video representations into full-resolution frames
 - Preserves textures, sharpness, lighting, and color dynamics
 - Adds visual detail that cannot be represented directly inside the diffusion model
@@ -49,6 +52,7 @@ Without the VAE, video frames would remain encoded numerical structures instead 
 Model sampling determines how latent noise is iteratively refined into a coherent video. Sampling settings define the trajectory of denoising across time, impacting stability, detail, and style.
 
 The sampling module controls parameters such as:
+
 - Number of diffusion steps
 - Type of sampler (e.g., uni_pc)
 - Scheduler behavior
