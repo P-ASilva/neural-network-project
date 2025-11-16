@@ -126,3 +126,126 @@ This is the resulting video:
   <source src="bonfire_lora.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
+
+---
+
+# Text To Image Model
+
+## 1. Core Workflow and Components
+
+This workflow utilizes a **latent image diffusion pipeline** to convert text prompts into a fully generated static image. The model interprets the prompt, generates an image inside latent space, and finally decodes it into a real pixel image. The pipeline relies on three main components: the **Diffusion Model**, **CLIP**, and **VAE**.
+
+---
+
+### 1.1. Diffusion Model (UNet)
+
+The diffusion model, specifically the **UNet** architecture within a larger checkpoint, is the engine responsible for creating the actual visual content of the image. It operates fully in *latent space* rather than pixel space, which allows for high-quality image synthesis with manageable compute.
+
+The process starts from **random latent noise** (initialized by the `EmptyLatentImage` node) and progressively refines it over several **sampling steps**. During this refinement (managed by the `KSampler` node), the model incorporates guidance from the prompt embeddings (positive and negative), enforcing visual style, subject appearance, and scene layout.
+
+Key responsibilities:
+
+* Generates the latent image from noise.
+* Maintains spatial consistency and composition.
+* Adapts to the prompt's style and subject description.
+
+---
+
+### 1.2. CLIP (Text Encoder)
+
+CLIP serves as the **text encoder** (using the `CLIPTextEncode` nodes), converting prompts into **vector representations (embeddings)** that the diffusion model can understand. It does not generate the image by itself but communicates the *meaning* of the prompt.
+
+Two embeddings are used:
+
+* **Positive Prompt Embedding**: Pushes the model toward desired attributes, such as "a small red house on a green hill."
+* **Negative Prompt Embedding**: Discourages unwanted artifacts, such as "low quality, bad lightning, descentralized."
+
+The embeddings are passed to the `KSampler` node, which uses them to guide the denoising process.
+
+---
+
+### 1.3. VAE (Variational Auto-Encoder)
+
+The Variational Auto-Encoder (**VAE**) handles the critical conversion between latent space and pixel space. The diffusion model (UNet) outputs a latent image—a highly compressed, non-visual numerical structure. The VAE takes this latent image (from the `KSampler` node's output) and **decodes** it into a real RGB image (using the `VAEDecode` node), acting as the final rendering stage of the pipeline.
+
+Responsibilities of the VAE decoder:
+
+* Converts the latent image representation into a full-resolution pixel image.
+* Preserves textures, sharpness, lighting, and color dynamics.
+* Enables the image to be displayed and saved (`SaveImage` node).
+
+---
+
+### 1.4. KSampler and Model Sampling
+
+The **KSampler** node is the core mechanism that controls **how** latent noise is iteratively refined into a coherent image. It is the implementation of the *Model Sampling* concept.
+
+The `KSampler` controls key generation parameters:
+
+| Parameter | Value | Description |
+| :--- | :--- | :--- |
+| **seed** | 152643018321775 | Ensures reproducibility for the initial noise state. (Used 5 different seeds) |
+| **steps** | 20 | The number of denoising iterations. Higher steps usually mean more detail. |
+| **cfg** | 8 | **Classifier Free Guidance** determines how strongly the model follows the prompt. Higher values increase adherence but can introduce artifacts. |
+| **sampler\_name** | `euler` | The specific mathematical algorithm used for the denoising steps. |
+| **scheduler** | `simple` | The schedule for noise injection/removal across steps. |
+| **denoise** | 1 | Indicates a full denoising process from pure noise to a final image. |
+
+The KSampler orchestrates the generative process by taking the **Model** , **Positive** , and **Negative**  embeddings, and the **Latent Image**, and iteratively refining the latent noise.
+
+---
+
+### 1.5. Model Details
+
+The file used, v1-5-pruned-emaonly.safetensors, is a specialized version of the Stable Diffusion v1.5 latent text-to-image diffusion model.
+
+And be found here:
+**https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5**
+
+#### Key Characteristics of the ModelBase Model: Stable Diffusion v1.5 
+
+- Optimization: The pruned-emaonly designation means the model is optimized for inference (generation) rather than fine-tuning.
+- Pruned: Unnecessary parameters, such as the optimizer states and non-EMA weights, have been removed.
+- EMA-Only: It retains only the Exponential Moving Average (EMA) weights, which typically provide the best image quality during generation while reducing the VRAM footprint and overall file size (around 4.27 GB).
+- Architecture: It uses the Latent Diffusion Model (LDM) architecture.
+- Native Resolution: The primary training resolution is $512 \times 512$ pixels, which is why the workflow uses this size for the EmptyLatentImage node.
+- File Format: The .safetensors format is used for enhanced security and faster loading compared to older .ckpt files.
+
+The workflow is built on three core pretrained components, all loaded via the `CheckpointLoaderSimple`: the diffusion model (UNet), the text encoder (CLIP), and the VAE.
+
+* **Diffusion Model (UNet)**
+    * **Source:** Contained within the `v1-5-pruned-emaonly.safetensors` checkpoint.
+    * **Function:** Generates the latent representation of the image.
+* **Text Encoder (CLIP)**
+    * **Source:** Contained within the `v1-5-pruned-emaonly.safetensors` checkpoint.
+    * **Function:** Converts the textual prompts into numerical embeddings.
+* **VAE**
+    * **Source:** Contained within the `v1-5-pruned-emaonly.safetensors` checkpoint.
+    * **Function:** Decodes the final latent sample into a viewable RGB image.
+
+The use of a single checkpoint simplifies the setup, ensuring all components are compatible and aligned for high-quality image generation.
+
+---
+
+### 1.6. Finished Workflow and Results
+
+This is how the complete workflow looks:
+![text to image workflow](t2i_workflow.png)
+
+**Positive Prompt:**
+```text
+A fantasy landscape with a small red house on a green hill, bright blue sky, and fluffy white clouds, highly detailed, vibrant colors, 4k resolution
+```
+
+**Negative Prompt:**
+```text
+low quality, bad lighting, descentralized, blurry, distorted
+```
+
+**Generated Images:**
+
+![Generated Image 1](o1.png)
+![Generated Image 2](o2.png) 
+![Generated Image 3](o3.png)
+![Generated Image 4](o4.png)
+![Generated Image 5](o5.png)
