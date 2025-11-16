@@ -7,12 +7,8 @@
 ## Projetos
 
 - [x] Classification
-- [ ] Roteiro 2
-- [ ] Roteiro 3
-- [ ] Roteiro 4
-- [ ] Projeto
-
-## Diagramas
+- [X] Regression
+- [X] Generation
 
 <!-- Use o [Mermaid](https://mermaid.js.org/intro/){:target='_blank'} para criar os diagramas de documentação.
 

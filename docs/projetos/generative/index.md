@@ -10,7 +10,8 @@ This workflow uses a *latent video diffusion pipeline* to convert text prompts i
 
 The diffusion model (WAN video model) is the engine responsible for creating the actual visual content and motion of the video. It operates fully in *latent space* rather than pixel space, which allows high-quality video synthesis with manageable compute.
 
-The model begins from random latent noise and progressively refines it over several steps, shaping it into temporally consistent video frames. During refinement, it incorporates guidance from the prompt embeddings (positive and negative), enforcing visual style, subject appearance, lighting, scene layout, motion, and cinematic behavior.
+The model begins from random latent noise and progressively refines it over several steps, shaping it into temporally consistent video frames. During refinement, it incorporates guidance from the positive and negative prompt embeddings, enforcing the desired visual style, subject appearance, lighting, scene layout, motion, and cinematic behavior.
+
 
 Key responsibilities:
 
@@ -158,7 +159,7 @@ CLIP serves as the **text encoder** (using the `CLIPTextEncode` nodes), converti
 Two embeddings are used:
 
 * **Positive Prompt Embedding**: Pushes the model toward desired attributes, such as "a small red house on a green hill."
-* **Negative Prompt Embedding**: Discourages unwanted artifacts, such as "low quality, bad lightning, descentralized."
+* **Negative Prompt Embedding**: Discourages unwanted artifacts, such as "low quality, bad lightning, decentralized."
 
 The embeddings are passed to the `KSampler` node, which uses them to guide the denoising process.
 
@@ -184,22 +185,21 @@ The `KSampler` controls key generation parameters:
 
 | Parameter | Value | Description |
 | :--- | :--- | :--- |
-| **seed** | 152643018321775 | Ensures reproducibility for the initial noise state. (Used 5 different seeds) |
-| **steps** | 20 | The number of denoising iterations. Higher steps usually mean more detail. |
-| **cfg** | 8 | **Classifier Free Guidance** determines how strongly the model follows the prompt. Higher values increase adherence but can introduce artifacts. |
+| **seed** | `152643018321775` | Ensures reproducibility for the initial noise state. (Used 5 different seeds) |
+| **steps** | `20` | The number of denoising iterations. Higher steps usually mean more detail. |
+| **cfg** | `8` | **Classifier Free Guidance** determines how strongly the model follows the prompt. Higher values increase adherence but can introduce artifacts. |
 | **sampler\_name** | `euler` | The specific mathematical algorithm used for the denoising steps. |
 | **scheduler** | `simple` | The schedule for noise injection/removal across steps. |
-| **denoise** | 1 | Indicates a full denoising process from pure noise to a final image. |
+| **denoise** | `1` | Indicates a full denoising process from pure noise to a final image. |
 
-The KSampler orchestrates the generative process by taking the **Model** , **Positive** , and **Negative**  embeddings, and the **Latent Image**, and iteratively refining the latent noise.
+Using the **Model**, **Positive** and **Negative** embeddings, and the **Latent Image**, the KSampler orchestrates the generative process by iteratively refining the latent noise.
 
 ---
 
 ### 1.5. Model Details
 
-The file used, v1-5-pruned-emaonly.safetensors, is a specialized version of the Stable Diffusion v1.5 latent text-to-image diffusion model.
+The file used, `v1-5-pruned-emaonly.safetensors`, is a specialized version of the Stable Diffusion v1.5 latent text-to-image diffusion model. Which can be found here:
 
-And be found here:
 **https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5**
 
 #### Key Characteristics of the ModelBase Model: Stable Diffusion v1.5 
