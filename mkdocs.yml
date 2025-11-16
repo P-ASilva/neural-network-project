@@ -138,9 +138,9 @@ extra_javascript:
 nav:
   - Home: index.md
   - This documentation: ./thisdocumentation/index.md
-  - Projetos:
-    - Projeto 1: ./projetos/classification/index.md
-    - Projeto 2: ./projetos/regression/index.md
-    - Projeto 3: ./projetos/generative/index.md
+  - Projects:
+    - Classification: ./projetos/classification/index.md
+    - Regression: ./projetos/regression/index.md
+    - Generative: ./projetos/generative/index.md
   - Notebooks:
     - Notebook 1: ./notebooks/processing.ipynb
